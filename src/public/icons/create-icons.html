@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocabMaster Icon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        canvas {
+            border: 1px solid #ddd;
+            margin: 10px;
+            border-radius: 15px;
+        }
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .icon-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .download-all {
+            background: #28a745;
+            font-size: 16px;
+            padding: 15px 30px;
+            margin: 20px auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 VocabMaster Icon Generator</h1>
+        <p>Click "Generate All Icons" to create placeholder icons for your PWA. Replace these with your custom design later.</p>
+        
+        <button class="download-all" onclick="generateAllIcons()">🎨 Generate All Icons</button>
+        
+        <div class="icon-grid" id="iconGrid"></div>
+    </div>
+
+    <script>
+        const iconSizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        
+        function createIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#3b82f6'); // Blue
+            gradient.addColorStop(0.5, '#8b5cf6'); // Purple  
+            gradient.addColorStop(1, '#06b6d4'); // Cyan
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Add rounded corners effect
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, size * 0.22);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+            
+            // Globe icon in center
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size * 0.25;
+            
+            // Globe circle
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = size * 0.03;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Globe lines
+            ctx.beginPath();
+            // Vertical line
+            ctx.moveTo(centerX, centerY - radius);
+            ctx.lineTo(centerX, centerY + radius);
+            // Horizontal line
+            ctx.moveTo(centerX - radius, centerY);
+            ctx.lineTo(centerX + radius, centerY);
+            // Curved lines
+            ctx.moveTo(centerX - radius * 0.6, centerY - radius);
+            ctx.quadraticCurveTo(centerX, centerY - radius * 0.3, centerX + radius * 0.6, centerY - radius);
+            ctx.moveTo(centerX - radius * 0.6, centerY + radius);
+            ctx.quadraticCurveTo(centerX, centerY + radius * 0.3, centerX + radius * 0.6, centerY + radius);
+            ctx.stroke();
+            
+            // Add "V" letter at top
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size * 0.15}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('V', centerX, centerY - radius * 1.4);
+            
+            // Add "M" letter at bottom
+            ctx.fillText('M', centerX, centerY + radius * 1.4);
+            
+            return canvas;
+        }
+        
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        function generateAllIcons() {
+            const iconGrid = document.getElementById('iconGrid');
+            iconGrid.innerHTML = '';
+            
+            iconSizes.forEach(size => {
+                const canvas = createIcon(size);
+                const iconItem = document.createElement('div');
+                iconItem.className = 'icon-item';
+                
+                const title = document.createElement('h3');
+                title.textContent = `${size}x${size}`;
+                
+                const downloadBtn = document.createElement('button');
+                downloadBtn.textContent = `Download ${size}x${size}`;
+                downloadBtn.onclick = () => downloadCanvas(canvas, `icon-${size}x${size}.png`);
+                
+                iconItem.appendChild(title);
+                iconItem.appendChild(canvas);
+                iconItem.appendChild(downloadBtn);
+                iconGrid.appendChild(iconItem);
+            });
+            
+            // Add download all button
+            const downloadAllBtn = document.createElement('button');
+            downloadAllBtn.textContent = '📱 Download All Icons as ZIP';
+            downloadAllBtn.className = 'download-all';
+            downloadAllBtn.onclick = downloadAllAsZip;
+            iconGrid.appendChild(downloadAllBtn);
+        }
+        
+        function downloadAllAsZip() {
+            // For simplicity, we'll download each icon individually
+            // In a real scenario, you'd use a library like JSZip
+            iconSizes.forEach(size => {
+                setTimeout(() => {
+                    const canvas = createIcon(size);
+                    downloadCanvas(canvas, `icon-${size}x${size}.png`);
+                }, size); // Small delay between downloads
+            });
+        }
+        
+        // Auto-generate on load
+        generateAllIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  
+  <!-- Basic Meta Tags -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="description" content="Master vocabulary through interactive games and daily challenges. Learn multiple languages with VocabMaster's gamified approach." />
+  <meta name="keywords" content="language learning, vocabulary, games, education, multilingual, spanish, french, german, italian, portuguese, japanese, korean, chinese, russian" />
+  <meta name="author" content="VocabMaster" />
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#000000" />
+  <meta name="background-color" content="#000000" />
+  <meta name="display" content="standalone" />
+  <meta name="orientation" content="portrait" />
+  
+  <!-- Apple iOS Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="VocabMaster" />
+  <meta name="apple-touch-fullscreen" content="yes" />
+  
+  <!-- Apple Splash Screens -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  
+  <!-- Microsoft Windows/IE Meta Tags -->
+  <meta name="msapplication-TileColor" content="#000000" />
+  <meta name="msapplication-tap-highlight" content="no" />
+  <meta name="msapplication-starturl" content="/" />
+  
+  <!-- Security Headers -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="referrer" content="origin-when-cross-origin" />
+  
+  <!-- Prevent Zoom on iOS -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  
+  <title>VocabMaster - Language Learning Game</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+  
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-192x192.png" />
+  
+  <!-- Apple Splash Screen Images -->
+  <link rel="apple-touch-startup-image" href="/splash/apple-splash-2048-2732.jpg" sizes="2048x2732" />
+  <link rel="apple-touch-startup-image" href="/splash/apple-splash-1668-2224.jpg" sizes="1668x2224" />
+  <link rel="apple-touch-startup-image" href="/splash/apple-splash-1536-2048.jpg" sizes="1536x2048" />
+  <link rel="apple-touch-startup-image" href="/splash/apple-splash-1125-2436.jpg" sizes="1125x2436" />
+  <link rel="apple-touch-startup-image" href="/splash/apple-splash-1242-2208.jpg" sizes="1242x2208" />
+  <link rel="apple-touch-startup-image" href="/splash/apple-splash-750-1334.jpg" sizes="750x1334" />
+  <link rel="apple-touch-startup-image" href="/splash/apple-splash-640-1136.jpg" sizes="640x1136" />
+  
+  <!-- Preload Critical Resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  
+  <!-- Critical CSS will be inlined here by build process -->
+  <style>
+    /* Critical CSS for loading screen */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid #333;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Prevent zoom on touch devices */
+    * {
+      touch-action: manipulation;
+    }
+    
+    /* Disable text selection on mobile */
+    body {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Allow text selection for input fields */
+    input, textarea {
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
+  </style>
+</head>
+<body>
+  <noscript>
+    <div style="text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+      <h1>JavaScript Required</h1>
+      <p>VocabMaster requires JavaScript to run. Please enable JavaScript in your browser and reload the page.</p>
+    </div>
+  </noscript>
+  
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-spinner"></div>
+  </div>
+  
+  <!-- App Root -->
+  <div id="root"></div>
+  
+  <!-- Remove loading screen when app loads -->
+  <script>
+    window.addEventListener('load', function() {
+      const loadingScreen = document.getElementById('loading-screen');
+      if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+          loadingScreen.remove();
+        }, 300);
+      }
+    });
+    
+    // Disable zoom on double tap for iOS
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+    
+    // Prevent pinch zoom
+    document.addEventListener('gesturestart', function (e) {
+      e.preventDefault();
+    });
+    
+    document.addEventListener('gesturechange', function (e) {
+      e.preventDefault();
+    });
+    
+    document.addEventListener('gestureend', function (e) {
+      e.preventDefault();
+    });
+  </script>
+</body>
+</html>
