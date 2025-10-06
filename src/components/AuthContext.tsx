@@ -1,4 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signInAnonymously,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser,
+  updateProfile
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 
 interface User {
   id: string;
@@ -9,22 +20,13 @@ interface User {
   lastLogin: string;
 }
 
-interface UserRegistration {
-  id: string;
-  email: string;
-  name: string;
-  isGuest: boolean;
-  createdAt: string;
-  lastLogin: string;
-  ipAddress?: string;
-}
-
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string, name?: string) => Promise<void>;
-  loginAsGuest: () => void;
-  logout: () => void;
+  signup: (email: string, password: string, name?: string) => Promise<void>;
+  loginAsGuest: () => Promise<void>;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -46,80 +48,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing session on mount
+  // Listen to Firebase auth state changes
   useEffect(() => {
-    const savedUser = localStorage.getItem('vocabmaster-user');
-    if (savedUser) {
-      try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
-      } catch (error) {
-        console.error('Failed to parse saved user data:', error);
-        localStorage.removeItem('vocabmaster-user');
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Fetch user data from Firestore
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        const userData = userDoc.data();
+        
+        setUser({
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          name: userData?.name || firebaseUser.displayName || 'User',
+          isGuest: firebaseUser.isAnonymous,
+          createdAt: userData?.createdAt || new Date().toISOString(),
+          lastLogin: new Date().toISOString()
+        });
+      } else {
+        setUser(null);
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string, name?: string): Promise<void> => {
+  const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      const now = new Date().toISOString();
-      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Check if user already exists
-      const existingUsers = JSON.parse(localStorage.getItem('vocabmaster-users') || '[]');
-      const existingUser = existingUsers.find((u: UserRegistration) => u.email === email && !u.isGuest);
-      
-      let userData: User;
-      
-      if (existingUser) {
-        // Update last login for existing user
-        existingUser.lastLogin = now;
-        const updatedUsers = existingUsers.map((u: UserRegistration) => 
-          u.email === email && !u.isGuest ? existingUser : u
-        );
-        localStorage.setItem('vocabmaster-users', JSON.stringify(updatedUsers));
-        
-        userData = {
-          id: existingUser.id,
-          email: existingUser.email,
-          name: existingUser.name,
-          isGuest: false,
-          createdAt: existingUser.createdAt,
-          lastLogin: now
-        };
-      } else {
-        // Create new user
-        const newUserRegistration: UserRegistration = {
-          id: userId,
-          email,
-          name: name || email.split('@')[0],
-          isGuest: false,
-          createdAt: now,
-          lastLogin: now,
-          ipAddress: '127.0.0.1' // In a real app, you'd get the actual IP
-        };
-        
-        const updatedUsers = [...existingUsers, newUserRegistration];
-        localStorage.setItem('vocabmaster-users', JSON.stringify(updatedUsers));
-        
-        userData = {
-          id: userId,
-          email,
-          name: name || email.split('@')[0],
-          isGuest: false,
-          createdAt: now,
-          lastLogin: now
-        };
-      }
-      
-      setUser(userData);
-      localStorage.setItem('vocabmaster-user', JSON.stringify(userData));
+      // Update last login
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        lastLogin: serverTimestamp()
+      }, { merge: true });
       
     } catch (error) {
       console.error('Login failed:', error);
@@ -129,52 +92,74 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const loginAsGuest = () => {
-    const now = new Date().toISOString();
-    const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const signup = async (email: string, password: string, name?: string): Promise<void> => {
+    setIsLoading(true);
     
-    const guestUser: User = {
-      id: guestId,
-      email: 'guest@vocabmaster.com',
-      name: 'Guest User',
-      isGuest: true,
-      createdAt: now,
-      lastLogin: now
-    };
-    
-    // Track guest sessions for admin
-    const existingUsers = JSON.parse(localStorage.getItem('vocabmaster-users') || '[]');
-    const guestSession: UserRegistration = {
-      id: guestId,
-      email: `guest_${guestId}@vocabmaster.com`,
-      name: 'Guest User',
-      isGuest: true,
-      createdAt: now,
-      lastLogin: now,
-      ipAddress: '127.0.0.1'
-    };
-    
-    const updatedUsers = [...existingUsers, guestSession];
-    localStorage.setItem('vocabmaster-users', JSON.stringify(updatedUsers));
-    
-    setUser(guestUser);
-    localStorage.setItem('vocabmaster-user', JSON.stringify(guestUser));
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update profile with name
+      if (name && userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: name
+        });
+      }
+      
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email,
+        name: name || email.split('@')[0],
+        isGuest: false,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp()
+      });
+      
+    } catch (error) {
+      console.error('Signup failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('vocabmaster-user');
+  const loginAsGuest = async (): Promise<void> => {
+    setIsLoading(true);
     
-    // Also clear any game progress if needed
-    localStorage.removeItem('vocabmaster-progress');
-    localStorage.removeItem('admin-vocabulary');
-    localStorage.removeItem('admin-languages');
+    try {
+      const userCredential = await signInAnonymously(auth);
+      
+      // Create anonymous user document
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email: `guest_${userCredential.user.uid}@vocabmaster.com`,
+        name: 'Guest User',
+        isGuest: true,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp()
+      });
+      
+    } catch (error) {
+      console.error('Guest login failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async (): Promise<void> => {
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (error) {
+      console.error('Logout failed:', error);
+      throw error;
+    }
   };
 
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     login,
+    signup,
     loginAsGuest,
     logout,
     isLoading

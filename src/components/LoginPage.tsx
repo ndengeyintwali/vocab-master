@@ -23,7 +23,7 @@ interface LoginPageProps {
   onGuestAccess: () => void;
 }
 
-export function LoginPage({ onLogin, onGuestAccess }: LoginPageProps) {
+export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps & { onSignup: (email: string, password: string, name: string) => void }) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -35,11 +35,17 @@ export function LoginPage({ onLogin, onGuestAccess }: LoginPageProps) {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      onLogin(email, password);
+    try {
+      if (isLogin) {
+        await onLogin(email, password);
+      } else {
+        await onSignup(email, password, name);
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleGuestAccess = () => {
