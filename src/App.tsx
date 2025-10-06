@@ -120,12 +120,23 @@ function AppContent() {
       await login(email, password);
     } catch (error) {
       console.error('Login failed:', error);
-      // You could add toast notification here
     }
   };
 
-  const handleGuestAccess = () => {
-    loginAsGuest();
+  const handleSignup = async (email: string, password: string, name: string) => {
+    try {
+      await signup(email, password, name);
+    } catch (error) {
+      console.error('Signup failed:', error);
+    }
+  };
+
+  const handleGuestAccess = async () => {
+    try {
+      await loginAsGuest();
+    } catch (error) {
+      console.error('Guest login failed:', error);
+    }
   };
 
   const handleBackFromChallenges = () => {
@@ -167,7 +178,11 @@ function AppContent() {
           <NotificationManager />
           
           <div className="flex-1">
-            <LoginPage onLogin={handleLogin} onGuestAccess={handleGuestAccess} />
+            <LoginPage 
+              onLogin={handleLogin} 
+              onSignup={handleSignup}
+              onGuestAccess={handleGuestAccess} 
+            />
           </div>
           <Footer />
         </div>
