@@ -15,16 +15,21 @@ import {
   Brain,
   GamepadIcon,
   TrendingUp,
+  LogOut,
+  User,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { MobileButton } from './MobileEnhancements';
+import { useAuth } from './AuthContext';
 
 interface HomePageProps {
   onGetStarted: () => void;
 }
 
 export function HomePage({ onGetStarted }: HomePageProps) {
+  const { user, logout } = useAuth();
   const [adminTaps, setAdminTaps] = useState(0);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogoTap = () => {
     setAdminTaps(prev => prev + 1);
@@ -34,6 +39,11 @@ export function HomePage({ onGetStarted }: HomePageProps) {
     }
     // Reset after 3 seconds
     setTimeout(() => setAdminTaps(0), 3000);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setShowUserMenu(false);
   };
   const features = [
     {
@@ -83,6 +93,52 @@ export function HomePage({ onGetStarted }: HomePageProps) {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-y-auto">
+      {/* User Menu */}
+      <div className="absolute top-4 right-4 z-20">
+        <div className="relative">
+          <Button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            variant="ghost"
+            size="sm"
+            className="p-2 rounded-full bg-gray-900/50 backdrop-blur-sm border border-gray-700 hover:bg-gray-800/70"
+          >
+            <User className="w-4 h-4 text-gray-300" />
+          </Button>
+          
+          {showUserMenu && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              className="absolute right-0 mt-2 w-48 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-lg"
+            >
+              <div className="p-3 border-b border-gray-700">
+                <p className="text-sm font-medium text-white truncate">
+                  {user?.name || 'User'}
+                </p>
+                <p className="text-xs text-gray-400 truncate">
+                  {user?.email}
+                </p>
+                {user?.isGuest && (
+                  <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-yellow-600/20 text-yellow-400 rounded">
+                    Guest
+                  </span>
+                )}
+              </div>
+              <div className="p-2">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </div>
+
       {/* Hero Section */}
       <div className="relative px-4 pt-8 pb-12">
         <motion.div

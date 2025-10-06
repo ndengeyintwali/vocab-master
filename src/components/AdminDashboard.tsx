@@ -13,6 +13,12 @@ import {
   Trophy,
   X,
   ArrowLeft,
+  Users,
+  UserCheck,
+  UserX,
+  Calendar,
+  Activity,
+  TrendingUp,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -31,6 +37,16 @@ interface VocabularyItem {
   difficulty: 'easy' | 'medium' | 'hard';
 }
 
+interface UserRegistration {
+  id: string;
+  email: string;
+  name: string;
+  isGuest: boolean;
+  createdAt: string;
+  lastLogin: string;
+  ipAddress?: string;
+}
+
 interface AdminDashboardProps {
   onBack: () => void;
 }
@@ -38,8 +54,10 @@ interface AdminDashboardProps {
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [vocabularyData, setVocabularyData] = useState<{ [key: string]: VocabularyItem[] }>({});
+  const [userRegistrations, setUserRegistrations] = useState<UserRegistration[]>([]);
   const [isAddingVocab, setIsAddingVocab] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   // Initialize with sample data to avoid timeout
@@ -72,6 +90,16 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
       } else {
         setVocabularyData(sampleData);
       }
+
+      // Load user registrations
+      const savedUsers = localStorage.getItem('vocabmaster-users');
+      if (savedUsers) {
+        try {
+          setUserRegistrations(JSON.parse(savedUsers));
+        } catch (e) {
+          console.error('Failed to load user data:', e);
+        }
+      }
       
       setIsLoading(false);
     };
@@ -93,6 +121,13 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     languagePairs: popularLanguagePairs.length,
     categories: [...new Set(Object.values(vocabularyData).flat().map(item => item.category))].length,
     totalChallenges: 12, // Static number for simplicity
+    totalUsers: userRegistrations.length,
+    registeredUsers: userRegistrations.filter(u => !u.isGuest).length,
+    guestSessions: userRegistrations.filter(u => u.isGuest).length,
+    newUsersToday: userRegistrations.filter(u => {
+      const today = new Date().toDateString();
+      return new Date(u.createdAt).toDateString() === today;
+    }).length,
   };
 
   const handleAddVocabulary = (newVocab: Omit<VocabularyItem, 'id'>, languageCode: string) => {
@@ -162,9 +197,10 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 bg-gray-900">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-900">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="vocabulary">Vocabulary</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -183,9 +219,42 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
               <Card className="bg-gray-900 border-gray-800 p-4">
                 <div className="flex items-center gap-3">
-                  <Globe className="w-8 h-8 text-green-400" />
+                  <Users className="w-8 h-8 text-green-400" />
                   <div>
-                    <div className="text-2xl font-bold text-white">{stats.languagePairs}</div>
+                    <div className="text-2xl font-bold text-white">{stats.totalUsers}</div>
+                    <div className="text-sm text-gray-400">Total Users</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-gray-900 border-gray-800 p-4">
+                <div className="flex items-center gap-3">
+                  <UserCheck className="w-8 h-8 text-purple-400" />
+                  <div>
+                    <div className="text-2xl font-bold text-white">{stats.registeredUsers}</div>
+                    <div className="text-sm text-gray-400">Registered</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-gray-900 border-gray-800 p-4">
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="w-8 h-8 text-yellow-400" />
+                  <div>
+                    <div className="text-2xl font-bold text-white">{stats.newUsersToday}</div>
+                    <div className="text-sm text-gray-400">New Today</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* User Statistics Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-gray-900 border-gray-800 p-4">
+                <div className="flex items-center gap-3">
+                  <Globe className="w-6 h-6 text-blue-400" />
+                  <div>
+                    <div className="text-lg font-bold text-white">{stats.languagePairs}</div>
                     <div className="text-sm text-gray-400">Language Pairs</div>
                   </div>
                 </div>
@@ -193,19 +262,19 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
               <Card className="bg-gray-900 border-gray-800 p-4">
                 <div className="flex items-center gap-3">
-                  <Target className="w-8 h-8 text-purple-400" />
+                  <Activity className="w-6 h-6 text-orange-400" />
                   <div>
-                    <div className="text-2xl font-bold text-white">{stats.categories}</div>
-                    <div className="text-sm text-gray-400">Categories</div>
+                    <div className="text-lg font-bold text-white">{stats.guestSessions}</div>
+                    <div className="text-sm text-gray-400">Guest Sessions</div>
                   </div>
                 </div>
               </Card>
 
               <Card className="bg-gray-900 border-gray-800 p-4">
                 <div className="flex items-center gap-3">
-                  <Trophy className="w-8 h-8 text-yellow-400" />
+                  <Trophy className="w-6 h-6 text-yellow-400" />
                   <div>
-                    <div className="text-2xl font-bold text-white">{stats.totalChallenges}</div>
+                    <div className="text-lg font-bold text-white">{stats.totalChallenges}</div>
                     <div className="text-sm text-gray-400">Challenge Types</div>
                   </div>
                 </div>
@@ -344,6 +413,150 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
                 );
               })}
             </div>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">User Management</h2>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="text-green-400 border-green-400">
+                  {stats.registeredUsers} Registered
+                </Badge>
+                <Badge variant="outline" className="text-blue-400 border-blue-400">
+                  {stats.guestSessions} Guests
+                </Badge>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <Input
+                placeholder="Search users by email or name..."
+                value={userSearchTerm}
+                onChange={(e) => setUserSearchTerm(e.target.value)}
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+            </div>
+
+            {/* User Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gray-900 border-gray-800 p-4">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-6 h-6 text-blue-400" />
+                  <div>
+                    <div className="text-lg font-bold text-white">{stats.newUsersToday}</div>
+                    <div className="text-sm text-gray-400">New Today</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-gray-900 border-gray-800 p-4">
+                <div className="flex items-center gap-3">
+                  <UserCheck className="w-6 h-6 text-green-400" />
+                  <div>
+                    <div className="text-lg font-bold text-white">
+                      {userRegistrations.filter(u => {
+                        const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                        return new Date(u.createdAt) > lastWeek;
+                      }).length}
+                    </div>
+                    <div className="text-sm text-gray-400">This Week</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-gray-900 border-gray-800 p-4">
+                <div className="flex items-center gap-3">
+                  <Activity className="w-6 h-6 text-purple-400" />
+                  <div>
+                    <div className="text-lg font-bold text-white">
+                      {userRegistrations.filter(u => {
+                        const today = new Date().toDateString();
+                        return new Date(u.lastLogin).toDateString() === today;
+                      }).length}
+                    </div>
+                    <div className="text-sm text-gray-400">Active Today</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-gray-900 border-gray-800 p-4">
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="w-6 h-6 text-yellow-400" />
+                  <div>
+                    <div className="text-lg font-bold text-white">
+                      {((stats.registeredUsers / Math.max(stats.totalUsers, 1)) * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-gray-400">Conversion Rate</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Users List */}
+            <Card className="bg-gray-900 border-gray-800">
+              <div className="p-4 border-b border-gray-800">
+                <h3 className="text-lg font-semibold">All Users ({userRegistrations.length})</h3>
+              </div>
+              <div className="p-4">
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {userRegistrations
+                    .filter(user => 
+                      user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                      user.name.toLowerCase().includes(userSearchTerm.toLowerCase())
+                    )
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <span className="text-white font-semibold text-sm">
+                              {user.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium text-white flex items-center gap-2">
+                              {user.name}
+                              {user.isGuest ? (
+                                <Badge variant="outline" className="text-xs text-orange-400 border-orange-400">
+                                  Guest
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-green-400 border-green-400">
+                                  Registered
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-400">{user.email}</div>
+                            <div className="text-xs text-gray-500">
+                              Joined: {new Date(user.createdAt).toLocaleDateString()} • 
+                              Last active: {new Date(user.lastLogin).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {user.isGuest ? (
+                            <UserX className="w-4 h-4 text-orange-400" />
+                          ) : (
+                            <UserCheck className="w-4 h-4 text-green-400" />
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {user.ipAddress || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  
+                  {userRegistrations.length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>No users registered yet</p>
+                      <p className="text-sm">Users will appear here as they sign up</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
           </TabsContent>
 
           {/* Settings Tab */}

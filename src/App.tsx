@@ -9,13 +9,16 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { NotificationManager } from './components/NotificationManager';
 import { SafeAreaProvider, OrientationManager, useAppShortcuts } from './components/MobileEnhancements';
 import { AdminDashboard } from './components/AdminDashboard';
+import { LoginPage } from './components/LoginPage';
+import { AuthProvider, useAuth } from './components/AuthContext';
 import { Footer } from './components/Footer';
 import { LanguagePair } from './data/languages';
 import { Challenge } from './data/challenges';
 
 type AppScreen = 'home' | 'language-selector' | 'game' | 'daily-challenges' | 'challenge-game' | 'admin';
 
-export default function App() {
+function AppContent() {
+  const { isAuthenticated, login, loginAsGuest, logout, user, isLoading } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
   const [selectedLanguagePair, setSelectedLanguagePair] = useState<LanguagePair | null>(null);
   const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
@@ -112,6 +115,19 @@ export default function App() {
     setAdminMode(false);
   };
 
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error('Login failed:', error);
+      // You could add toast notification here
+    }
+  };
+
+  const handleGuestAccess = () => {
+    loginAsGuest();
+  };
+
   const handleBackFromChallenges = () => {
     setCurrentScreen('language-selector');
   };
@@ -125,6 +141,39 @@ export default function App() {
     setCurrentScreen('daily-challenges');
     setActiveChallenge(null);
   };
+
+  // Show loading screen while checking auth
+  if (isLoading) {
+    return (
+      <SafeAreaProvider>
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading VocabMaster...</p>
+          </div>
+        </div>
+      </SafeAreaProvider>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaProvider>
+        <div className="min-h-screen flex flex-col dark">
+          <OrientationManager />
+          <PWAInstallPrompt />
+          <OfflineIndicator />
+          <NotificationManager />
+          
+          <div className="flex-1">
+            <LoginPage onLogin={handleLogin} onGuestAccess={handleGuestAccess} />
+          </div>
+          <Footer />
+        </div>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
@@ -187,5 +236,13 @@ export default function App() {
         <Footer />
       </div>
     </SafeAreaProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

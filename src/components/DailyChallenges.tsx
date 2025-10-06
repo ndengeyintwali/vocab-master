@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Clock, Trophy, Star, Gift, CheckCircle } from 'lucide-react';
 import { Button } from './ui/button';
+import { PageHeader } from './PageHeader';
 import { Progress } from './ui/progress';
 import { Challenge, getTodaysChallenges } from '../data/challenges';
 
@@ -46,6 +47,12 @@ export function DailyChallenges({ onBack, onStartChallenge }: DailyChallengesPro
 
   return (
     <div className="min-h-screen bg-black">
+      <PageHeader 
+        title="Daily Challenges"
+        onBack={onBack}
+        showBackButton={true}
+      />
+      
       {/* Header */}
       <div className="bg-black border-b border-gray-800 p-4">
         <div className="flex items-center justify-between mb-4">

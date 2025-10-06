@@ -9,6 +9,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "./ui/button";
+import { PageHeader } from "./PageHeader";
 import {
   popularLanguagePairs,
   LanguagePair,
@@ -28,32 +29,24 @@ export function LanguageSelector({
   return (
     <div className="min-h-screen bg-black flex flex-col">
       {/* Header */}
-      <div className="bg-black border-b border-gray-800 p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            {onBack && (
-              <Button
-                onClick={onBack}
-                variant="ghost"
-                size="sm"
-                className="text-gray-400 hover:text-white hover:bg-gray-800 p-2 h-auto"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            )}
-            <Globe className="w-6 h-6 text-blue-400" />
-            <h1 className="text-xl font-bold text-white">
-              Language Learning
-            </h1>
-          </div>
+      <PageHeader 
+        title="Choose Language"
+        onBack={onBack}
+        showBackButton={!!onBack}
+      />
+      
+      <div className="flex-1 p-4">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-white mb-2">
+            Language Learning
+          </h2>
+          <p className="text-gray-400 text-sm">
+            Choose your language pair to start learning
+          </p>
         </div>
-        <p className="text-gray-400 text-sm">
-          Choose your language pair to start learning
-        </p>
-      </div>
 
-      {/* Daily Challenges Section */}
-      <div className="p-4">
+        {/* Daily Challenges Section */}
+        <div className="mb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -89,14 +82,14 @@ export function LanguageSelector({
             </div>
           </Button>
         </motion.div>
-      </div>
+        </div>
 
-      {/* Language Pairs */}
-      <div className="flex-1 p-4">
-        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-blue-400" />
-          Choose Language Pair
-        </h2>
+        {/* Language Pairs */}
+        <div>
+          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-blue-400" />
+            Choose Language Pair
+          </h2>
         <div className="space-y-3">
           {popularLanguagePairs.map((pair, index) => (
             <motion.div
@@ -161,6 +154,7 @@ export function LanguageSelector({
             </p>
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { PageHeader } from './PageHeader';
 import { GameHeader } from './GameHeader';
 import { QuestionCard } from './QuestionCard';
 import { AnswerOptions } from './AnswerOptions';
@@ -93,6 +94,12 @@ export function GameScreen({ languagePair, onBack }: GameScreenProps) {
 
   return (
     <div className="min-h-screen bg-black">
+      <PageHeader 
+        title={`${languagePair.name} Game`}
+        onBack={onBack}
+        showBackButton={true}
+      />
+      
       <GameHeader 
         score={score}
         streak={streak}
