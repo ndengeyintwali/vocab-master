@@ -27,6 +27,9 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { popularLanguagePairs } from '../data/languages';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { fetchWordWithTranslation } from '../lib/dictionaryAPI';
 
 // Simplified vocabulary item interface
 interface VocabularyItem {
@@ -60,6 +63,33 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load users from Firestore
+  const loadUsersFromFirestore = async () => {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      
+      const users: UserRegistration[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        users.push({
+          id: doc.id,
+          email: data.email || '',
+          name: data.name || 'Unknown',
+          isGuest: data.isGuest || false,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          lastLogin: data.lastLogin?.toDate?.()?.toISOString() || new Date().toISOString(),
+          ipAddress: data.ipAddress || 'N/A'
+        });
+      });
+      
+      setUserRegistrations(users);
+    } catch (error) {
+      console.error('Error loading users from Firestore:', error);
+    }
+  };
+
   // Initialize with sample data to avoid timeout
   useEffect(() => {
     const initializeData = () => {
@@ -91,13 +121,8 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
         setVocabularyData(sampleData);
       }
 
-      // Load user registrations
-      const savedUsers = localStorage.getItem('vocabmaster-users');
-      if (savedUsers) {
-        try {
-          setUserRegistrations(JSON.parse(savedUsers));
-        } catch (e) {
-          console.error('Failed to load user data:', e);
+      // Load user registrations from Firestore
+      loadUsersFromFirestore();
         }
       }
       
@@ -639,8 +664,31 @@ function VocabularyModal({ isOpen, onClose, onSave, title }: VocabularyModalProp
     difficulty: 'medium' as 'easy' | 'medium' | 'hard',
     languageCode: 'es',
   });
+  const [isLoadingTranslation, setIsLoadingTranslation] = useState(false);
 
   const categories = ['basic', 'food', 'travel', 'business', 'family', 'nature', 'technology', 'sports', 'arts'];
+
+  const handleFetchFromDictionary = async () => {
+    if (!formData.word.trim()) return;
+    
+    setIsLoadingTranslation(true);
+    try {
+      const result = await fetchWordWithTranslation(formData.word, formData.languageCode);
+      if (result) {
+        setFormData(prev => ({
+          ...prev,
+          translation: result.translation
+        }));
+      } else {
+        alert('Could not find translation for this word');
+      }
+    } catch (error) {
+      console.error('Error fetching translation:', error);
+      alert('Error fetching translation');
+    } finally {
+      setIsLoadingTranslation(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -691,13 +739,27 @@ function VocabularyModal({ isOpen, onClose, onSave, title }: VocabularyModalProp
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Word (English)
             </label>
-            <Input
-              value={formData.word}
-              onChange={(e) => setFormData(prev => ({ ...prev, word: e.target.value }))}
-              className="bg-gray-800 border-gray-700 text-white"
-              placeholder="Enter English word"
-              required
-            />
+            <div className="flex gap-2">
+              <Input
+                value={formData.word}
+                onChange={(e) => setFormData(prev => ({ ...prev, word: e.target.value }))}
+                className="bg-gray-800 border-gray-700 text-white flex-1"
+                placeholder="Enter English word"
+                required
+              />
+              <Button
+                type="button"
+                onClick={handleFetchFromDictionary}
+                disabled={!formData.word.trim() || isLoadingTranslation}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isLoadingTranslation ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  'Auto-Fill'
+                )}
+              </Button>
+            </div>
           </div>
 
           <div>
@@ -708,7 +770,7 @@ function VocabularyModal({ isOpen, onClose, onSave, title }: VocabularyModalProp
               value={formData.translation}
               onChange={(e) => setFormData(prev => ({ ...prev, translation: e.target.value }))}
               className="bg-gray-800 border-gray-700 text-white"
-              placeholder="Enter translation"
+              placeholder="Enter translation or use Auto-Fill"
               required
             />
           </div>
