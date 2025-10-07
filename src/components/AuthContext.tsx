@@ -41,12 +41,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        loadUserProfile(session.user.id, session.user.email || '');
-      } else {
-        setIsLoading(false);
+        await loadUserProfile(session.user.id, session.user.email || '');
       }
+      setIsLoading(false);
     });
 
     // Listen for auth changes
@@ -64,11 +63,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const loadUserProfile = async (userId: string, email: string) => {
     try {
-      const { data, error } = await supabase
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 5000)
+      );
+      
+      const queryPromise = supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       if (error) throw error;
 

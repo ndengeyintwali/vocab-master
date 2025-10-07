@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HomePage } from './components/HomePage';
 import { GameScreen } from './components/GameScreen';
 import { LanguageSelector } from './components/LanguageSelector';
@@ -71,9 +71,12 @@ function AppContent() {
     };
   }, []);
 
+  const hasRedirected = useRef(false);
+
   // Check URL params after auth completes
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
+    if (isAuthenticated && !isLoading && !hasRedirected.current) {
+      hasRedirected.current = true;
       const urlParams = new URLSearchParams(window.location.search);
       const admin = urlParams.get('admin');
       
@@ -81,9 +84,6 @@ function AppContent() {
       if (user?.isAdmin || admin === 'true') {
         setCurrentScreen('admin');
         setAdminMode(true);
-      } else {
-        // Reset to home screen after login
-        setCurrentScreen('home');
       }
     }
   }, [isAuthenticated, isLoading, user]);
