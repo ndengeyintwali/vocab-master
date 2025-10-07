@@ -71,6 +71,18 @@ function AppContent() {
     };
   }, []);
 
+  // Check URL params after auth completes
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const admin = urlParams.get('admin');
+      if (admin === 'true') {
+        setCurrentScreen('admin');
+        setAdminMode(true);
+      }
+    }
+  }, [isAuthenticated, isLoading]);
+
   const handleGetStarted = () => {
     setCurrentScreen('language-selector');
   };
@@ -108,6 +120,11 @@ function AppContent() {
     setSelectedLanguagePair(null);
     setActiveChallenge(null);
     setAdminMode(false);
+  };
+
+  const handleAdminAccess = () => {
+    setCurrentScreen('admin');
+    setAdminMode(true);
   };
 
   const handleBackFromAdmin = () => {
@@ -200,7 +217,7 @@ function AppContent() {
         <div className="flex-1">
       
       {currentScreen === 'home' && (
-        <HomePage onGetStarted={handleGetStarted} />
+        <HomePage onGetStarted={handleGetStarted} onAdminAccess={handleAdminAccess} />
       )}
       
       {currentScreen === 'language-selector' && (

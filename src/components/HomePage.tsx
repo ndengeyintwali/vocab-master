@@ -24,9 +24,10 @@ import { useAuth } from './AuthContext';
 
 interface HomePageProps {
   onGetStarted: () => void;
+  onAdminAccess?: () => void;
 }
 
-export function HomePage({ onGetStarted }: HomePageProps) {
+export function HomePage({ onGetStarted, onAdminAccess }: HomePageProps) {
   const { user, logout } = useAuth();
   const [adminTaps, setAdminTaps] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -35,7 +36,9 @@ export function HomePage({ onGetStarted }: HomePageProps) {
     setAdminTaps(prev => prev + 1);
     if (adminTaps >= 6) {
       // Admin access after 7 taps on logo
-      window.location.href = '/?admin=true';
+      if (onAdminAccess) {
+        onAdminAccess();
+      }
     }
     // Reset after 3 seconds
     setTimeout(() => setAdminTaps(0), 3000);
