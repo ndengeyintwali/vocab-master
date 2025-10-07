@@ -54,7 +54,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const timeout = setTimeout(() => {
       console.warn('Firebase auth timeout, proceeding without authentication');
       setIsLoading(false);
-    }, 5000);
+    }, 2000);
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       clearTimeout(timeout);
