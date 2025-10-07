@@ -54,16 +54,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const timeout = setTimeout(() => {
       console.warn('Firebase auth timeout, proceeding without authentication');
       setIsLoading(false);
-    }, 2000);
+    }, 5000);
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       clearTimeout(timeout);
       
       try {
         if (firebaseUser) {
-          // Fetch user data from Firestore
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          const userData = userDoc.data();
+          // Fetch user data from Firestore with retry
+          let userData = null;
+          let retries = 3;
+          
+          while (retries > 0 && !userData) {
+            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+            userData = userDoc.data();
+            if (!userData && retries > 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            retries--;
+          }
           
           setUser({
             id: firebaseUser.uid,
@@ -91,8 +100,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
-    setIsLoading(true);
-    
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
@@ -104,14 +111,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const signup = async (email: string, password: string, name?: string): Promise<void> => {
-    setIsLoading(true);
-    
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -134,14 +137,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Signup failed:', error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const loginAsGuest = async (): Promise<void> => {
-    setIsLoading(true);
-    
     try {
       const userCredential = await signInAnonymously(auth);
       
@@ -157,8 +156,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Guest login failed:', error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
