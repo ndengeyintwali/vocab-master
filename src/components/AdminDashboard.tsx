@@ -67,27 +67,52 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
   const loadUsersFromFirestore = async () => {
     try {
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(usersRef);
       
       const users: UserRegistration[] = [];
       querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-        const lastLoginDate = data.lastLogin?.toDate ? data.lastLogin.toDate() : new Date();
-        
-        users.push({
-          id: doc.id,
-          email: data.email || '',
-          name: data.name || 'Unknown',
-          isGuest: data.isGuest || false,
-          createdAt: createdAtDate.toISOString(),
-          lastLogin: lastLoginDate.toISOString(),
-          ipAddress: data.ipAddress || 'N/A'
-        });
+        try {
+          const data = doc.data();
+          let createdAtDate = new Date();
+          let lastLoginDate = new Date();
+          
+          if (data.createdAt) {
+            if (typeof data.createdAt.toDate === 'function') {
+              createdAtDate = data.createdAt.toDate();
+            } else if (data.createdAt instanceof Date) {
+              createdAtDate = data.createdAt;
+            } else if (typeof data.createdAt === 'string') {
+              createdAtDate = new Date(data.createdAt);
+            }
+          }
+          
+          if (data.lastLogin) {
+            if (typeof data.lastLogin.toDate === 'function') {
+              lastLoginDate = data.lastLogin.toDate();
+            } else if (data.lastLogin instanceof Date) {
+              lastLoginDate = data.lastLogin;
+            } else if (typeof data.lastLogin === 'string') {
+              lastLoginDate = new Date(data.lastLogin);
+            }
+          }
+          
+          users.push({
+            id: doc.id,
+            email: data.email || '',
+            name: data.name || 'Unknown',
+            isGuest: data.isGuest || false,
+            createdAt: createdAtDate.toISOString(),
+            lastLogin: lastLoginDate.toISOString(),
+            ipAddress: data.ipAddress || 'N/A'
+          });
+        } catch (docError) {
+          console.error('Error processing user document:', doc.id, docError);
+        }
       });
       
+      users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setUserRegistrations(users);
+      console.log('Loaded users from Firestore:', users.length);
     } catch (error) {
       console.error('Error loading users from Firestore:', error);
     }

@@ -79,6 +79,9 @@ function AppContent() {
       if (admin === 'true') {
         setCurrentScreen('admin');
         setAdminMode(true);
+      } else {
+        // Reset to home screen after login
+        setCurrentScreen('home');
       }
     }
   }, [isAuthenticated, isLoading]);
