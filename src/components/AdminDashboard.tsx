@@ -27,8 +27,7 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { popularLanguagePairs } from '../data/languages';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
 import { fetchWordWithTranslation } from '../lib/dictionaryAPI';
 
 // Simplified vocabulary item interface
@@ -63,58 +62,30 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load users from Firestore
+  // Load users from Supabase
   const loadUsersFromFirestore = async () => {
     try {
-      const usersRef = collection(db, 'users');
-      const querySnapshot = await getDocs(usersRef);
-      
-      const users: UserRegistration[] = [];
-      querySnapshot.forEach((doc) => {
-        try {
-          const data = doc.data();
-          let createdAtDate = new Date();
-          let lastLoginDate = new Date();
-          
-          if (data.createdAt) {
-            if (typeof data.createdAt.toDate === 'function') {
-              createdAtDate = data.createdAt.toDate();
-            } else if (data.createdAt instanceof Date) {
-              createdAtDate = data.createdAt;
-            } else if (typeof data.createdAt === 'string') {
-              createdAtDate = new Date(data.createdAt);
-            }
-          }
-          
-          if (data.lastLogin) {
-            if (typeof data.lastLogin.toDate === 'function') {
-              lastLoginDate = data.lastLogin.toDate();
-            } else if (data.lastLogin instanceof Date) {
-              lastLoginDate = data.lastLogin;
-            } else if (typeof data.lastLogin === 'string') {
-              lastLoginDate = new Date(data.lastLogin);
-            }
-          }
-          
-          users.push({
-            id: doc.id,
-            email: data.email || '',
-            name: data.name || 'Unknown',
-            isGuest: data.isGuest || false,
-            createdAt: createdAtDate.toISOString(),
-            lastLogin: lastLoginDate.toISOString(),
-            ipAddress: data.ipAddress || 'N/A'
-          });
-        } catch (docError) {
-          console.error('Error processing user document:', doc.id, docError);
-        }
-      });
-      
-      users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const users: UserRegistration[] = (data || []).map((user) => ({
+        id: user.id,
+        email: user.email || '',
+        name: user.name || 'Unknown',
+        isGuest: user.is_guest || false,
+        createdAt: user.created_at || new Date().toISOString(),
+        lastLogin: user.last_login || new Date().toISOString(),
+        ipAddress: 'N/A'
+      }));
+
       setUserRegistrations(users);
-      console.log('Loaded users from Firestore:', users.length);
+      console.log('Loaded users from Supabase:', users.length);
     } catch (error) {
-      console.error('Error loading users from Firestore:', error);
+      console.error('Error loading users from Supabase:', error);
     }
   };
 

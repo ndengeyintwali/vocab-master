@@ -1,21 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signInAnonymously,
-  signOut,
-  onAuthStateChanged,
-  User as FirebaseUser,
-  updateProfile
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { supabase, ADMIN_EMAIL } from '../lib/supabase';
 
 interface User {
   id: string;
   email: string;
   name?: string;
   isGuest: boolean;
+  isAdmin: boolean;
   createdAt: string;
   lastLogin: string;
 }
@@ -23,7 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string, name?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   loginAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
@@ -48,125 +39,128 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Listen to Firebase auth state changes
   useEffect(() => {
-    // Set a timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      console.warn('Firebase auth timeout, proceeding without authentication');
-      setIsLoading(false);
-    }, 5000);
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadUserProfile(session.user.id, session.user.email || '');
+      } else {
+        setIsLoading(false);
+      }
+    });
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      clearTimeout(timeout);
-      
-      try {
-        if (firebaseUser) {
-          // Fetch user data from Firestore with retry
-          let userData = null;
-          let retries = 3;
-          
-          while (retries > 0 && !userData) {
-            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-            userData = userDoc.data();
-            if (!userData && retries > 1) {
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            retries--;
-          }
-          
-          setUser({
-            id: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            name: userData?.name || firebaseUser.displayName || 'User',
-            isGuest: firebaseUser.isAnonymous,
-            createdAt: userData?.createdAt || new Date().toISOString(),
-            lastLogin: new Date().toISOString()
-          });
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Firebase auth error:', error);
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await loadUserProfile(session.user.id, session.user.email || '');
+      } else {
         setUser(null);
       }
-      
       setIsLoading(false);
     });
 
-    return () => {
-      unsubscribe();
-      clearTimeout(timeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const loadUserProfile = async (userId: string, email: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // Update last login
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        lastLogin: serverTimestamp()
-      }, { merge: true });
-      
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      setUser({
+        id: userId,
+        email: email,
+        name: data?.name || 'User',
+        isGuest: data?.is_guest || false,
+        isAdmin: email === ADMIN_EMAIL,
+        createdAt: data?.created_at || new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      });
     } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
+      console.error('Error loading user profile:', error);
+      setUser({
+        id: userId,
+        email: email,
+        name: 'User',
+        isGuest: false,
+        isAdmin: email === ADMIN_EMAIL,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      });
+    }
+  };
+
+  const login = async (email: string, password: string): Promise<void> => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
+    // Update last login
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) {
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', authUser.id);
     }
   };
 
   const signup = async (email: string, password: string, name?: string): Promise<void> => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update profile with name
-      if (name && userCredential.user) {
-        await updateProfile(userCredential.user, {
-          displayName: name
-        });
-      }
-      
-      // Create user document in Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        email,
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+      // Create user profile
+      await supabase.from('users').insert({
+        id: data.user.id,
+        email: email,
         name: name || email.split('@')[0],
-        isGuest: false,
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp()
+        is_guest: false,
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString()
       });
-      
-    } catch (error) {
-      console.error('Signup failed:', error);
-      throw error;
     }
   };
 
   const loginAsGuest = async (): Promise<void> => {
-    try {
-      const userCredential = await signInAnonymously(auth);
-      
-      // Create anonymous user document
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        email: `guest_${userCredential.user.uid}@vocabmaster.com`,
+    const guestEmail = `guest_${Date.now()}@vocabmaster.com`;
+    const guestPassword = `guest_${Math.random().toString(36).slice(2)}`;
+
+    const { data, error } = await supabase.auth.signUp({
+      email: guestEmail,
+      password: guestPassword,
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+      await supabase.from('users').insert({
+        id: data.user.id,
+        email: guestEmail,
         name: 'Guest User',
-        isGuest: true,
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp()
+        is_guest: true,
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString()
       });
-      
-    } catch (error) {
-      console.error('Guest login failed:', error);
-      throw error;
     }
   };
 
   const logout = async (): Promise<void> => {
-    try {
-      await signOut(auth);
-      setUser(null);
-    } catch (error) {
-      console.error('Logout failed:', error);
-      throw error;
-    }
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setUser(null);
   };
 
   const value: AuthContextType = {

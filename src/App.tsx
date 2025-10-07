@@ -76,7 +76,9 @@ function AppContent() {
     if (isAuthenticated && !isLoading) {
       const urlParams = new URLSearchParams(window.location.search);
       const admin = urlParams.get('admin');
-      if (admin === 'true') {
+      
+      // Auto-redirect admin users to admin page
+      if (user?.isAdmin || admin === 'true') {
         setCurrentScreen('admin');
         setAdminMode(true);
       } else {
@@ -84,7 +86,7 @@ function AppContent() {
         setCurrentScreen('home');
       }
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, user]);
 
   const handleGetStarted = () => {
     setCurrentScreen('language-selector');

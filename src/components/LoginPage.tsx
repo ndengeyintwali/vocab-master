@@ -40,7 +40,9 @@ export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps &
         await onLogin(email, password);
       } else {
         await onSignup(email, password, name);
-        alert('Account created successfully! Welcome to VocabMaster.');
+        setTimeout(() => {
+          alert('Account created successfully! Welcome to VocabMaster.');
+        }, 100);
       }
     } catch (error: any) {
       const errorMessage = error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password' || error?.code === 'auth/user-not-found'
@@ -56,8 +58,16 @@ export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps &
     }
   };
 
-  const handleGuestAccess = () => {
-    onGuestAccess();
+  const handleGuestAccess = async () => {
+    setIsLoading(true);
+    try {
+      await onGuestAccess();
+    } catch (error) {
+      console.error('Guest access failed:', error);
+      alert('Failed to access as guest. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -148,8 +158,9 @@ export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps &
           >
             <Button
               onClick={handleGuestAccess}
+              disabled={isLoading}
               variant="ghost"
-              className="text-gray-400 hover:text-white hover:bg-gray-800/50 border border-gray-700 hover:border-gray-600"
+              className="text-gray-400 hover:text-white hover:bg-gray-800/50 border border-gray-700 hover:border-gray-600 disabled:opacity-50"
             >
               Continue as Guest
               <ArrowRight className="w-4 h-4 ml-2" />
