@@ -116,19 +116,11 @@ function AppContent() {
   };
 
   const handleLogin = async (email: string, password: string) => {
-    try {
-      await login(email, password);
-    } catch (error) {
-      console.error('Login failed:', error);
-    }
+    await login(email, password);
   };
 
   const handleSignup = async (email: string, password: string, name: string) => {
-    try {
-      await signup(email, password, name);
-    } catch (error) {
-      console.error('Signup failed:', error);
-    }
+    await signup(email, password, name);
   };
 
   const handleGuestAccess = async () => {

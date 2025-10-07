@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Globe, 
@@ -30,12 +30,10 @@ export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps &
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
     
     try {
       if (isLogin) {
@@ -44,15 +42,14 @@ export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps &
         await onSignup(email, password, name);
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
       const errorMessage = error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password' || error?.code === 'auth/user-not-found'
         ? 'Invalid email or password'
         : error?.code === 'auth/email-already-in-use'
         ? 'Email already in use'
         : error?.code === 'auth/weak-password'
         ? 'Password should be at least 6 characters'
-        : 'Authentication failed. Please try again.';
-      setError(errorMessage);
+        : error?.message || 'Authentication failed. Please try again.';
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -180,12 +177,6 @@ export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps &
             </CardHeader>
             
             <CardContent className="space-y-6">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 flex items-start gap-2">
-                  <div className="text-red-400 text-sm">{error}</div>
-                </div>
-              )}
-              
               <form onSubmit={handleSubmit} className="space-y-4">
                 {!isLogin && (
                   <div className="space-y-2">
@@ -290,8 +281,6 @@ export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps &
               </div>
             </CardContent>
           </Card>
-
-
         </motion.div>
       </div>
     </div>
