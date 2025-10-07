@@ -42,6 +42,10 @@ CREATE POLICY "Users can view their own data"
   ON users FOR SELECT
   USING (auth.uid() = id);
 
+CREATE POLICY "Admin can view all users"
+  ON users FOR SELECT
+  USING (auth.jwt() ->> 'email' = 'admin@vocabmaster.com');
+
 CREATE POLICY "Users can insert their own data"
   ON users FOR INSERT
   WITH CHECK (auth.uid() = id);
