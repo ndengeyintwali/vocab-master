@@ -50,27 +50,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Listen to Firebase auth state changes
   useEffect(() => {
+    // Set a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      console.warn('Firebase auth timeout, proceeding without authentication');
+      setIsLoading(false);
+    }, 5000);
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Fetch user data from Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        const userData = userDoc.data();
-        
-        setUser({
-          id: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          name: userData?.name || firebaseUser.displayName || 'User',
-          isGuest: firebaseUser.isAnonymous,
-          createdAt: userData?.createdAt || new Date().toISOString(),
-          lastLogin: new Date().toISOString()
-        });
-      } else {
+      clearTimeout(timeout);
+      
+      try {
+        if (firebaseUser) {
+          // Fetch user data from Firestore
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const userData = userDoc.data();
+          
+          setUser({
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: userData?.name || firebaseUser.displayName || 'User',
+            isGuest: firebaseUser.isAnonymous,
+            createdAt: userData?.createdAt || new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+          });
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Firebase auth error:', error);
         setUser(null);
       }
+      
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {

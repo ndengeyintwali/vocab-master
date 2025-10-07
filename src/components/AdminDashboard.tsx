@@ -73,13 +73,16 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
       const users: UserRegistration[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+        const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+        const lastLoginDate = data.lastLogin?.toDate ? data.lastLogin.toDate() : new Date();
+        
         users.push({
           id: doc.id,
           email: data.email || '',
           name: data.name || 'Unknown',
           isGuest: data.isGuest || false,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-          lastLogin: data.lastLogin?.toDate?.()?.toISOString() || new Date().toISOString(),
+          createdAt: createdAtDate.toISOString(),
+          lastLogin: lastLoginDate.toISOString(),
           ipAddress: data.ipAddress || 'N/A'
         });
       });
@@ -123,8 +126,6 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
       // Load user registrations from Firestore
       loadUsersFromFirestore();
-        }
-      }
       
       setIsLoading(false);
     };
@@ -722,7 +723,7 @@ function VocabularyModal({ isOpen, onClose, onSave, title }: VocabularyModalProp
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Target Language
             </label>
-            <Select value={formData.languageCode} onValueChange={(value) => setFormData(prev => ({ ...prev, languageCode: value }))}>
+            <Select value={formData.languageCode} onValueChange={(value: any) => setFormData(prev => ({ ...prev, languageCode: value }))}>
               <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                 <SelectValue />
               </SelectTrigger>
@@ -779,7 +780,7 @@ function VocabularyModal({ isOpen, onClose, onSave, title }: VocabularyModalProp
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Category
             </label>
-            <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+            <Select value={formData.category} onValueChange={(value: any) => setFormData(prev => ({ ...prev, category: value }))}>
               <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                 <SelectValue />
               </SelectTrigger>
@@ -797,7 +798,7 @@ function VocabularyModal({ isOpen, onClose, onSave, title }: VocabularyModalProp
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Difficulty
             </label>
-            <Select value={formData.difficulty} onValueChange={(value) => setFormData(prev => ({ ...prev, difficulty: value as 'easy' | 'medium' | 'hard' }))}>
+            <Select value={formData.difficulty} onValueChange={(value: string) => setFormData(prev => ({ ...prev, difficulty: value as 'easy' | 'medium' | 'hard' }))}>
               <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                 <SelectValue />
               </SelectTrigger>
