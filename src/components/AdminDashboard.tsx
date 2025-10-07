@@ -120,7 +120,8 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
   // Initialize with sample data to avoid timeout
   useEffect(() => {
-    const initializeData = () => {
+    const initializeData = async () => {
+      console.log('AdminDashboard: Initializing data...');
       // Create sample vocabulary data
       const sampleData: { [key: string]: VocabularyItem[] } = {
         es: [
@@ -150,7 +151,8 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
       }
 
       // Load user registrations from Firestore
-      loadUsersFromFirestore();
+      console.log('AdminDashboard: Loading users from Firestore...');
+      await loadUsersFromFirestore();
       
       setIsLoading(false);
     };
@@ -471,6 +473,14 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">User Management</h2>
               <div className="flex gap-2">
+                <Button
+                  onClick={loadUsersFromFirestore}
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-600 text-blue-400 hover:bg-blue-900"
+                >
+                  Refresh Users
+                </Button>
                 <Badge variant="outline" className="text-green-400 border-green-400">
                   {stats.registeredUsers} Registered
                 </Badge>

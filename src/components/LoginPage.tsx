@@ -40,6 +40,7 @@ export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps &
         await onLogin(email, password);
       } else {
         await onSignup(email, password, name);
+        alert('Account created successfully! Welcome to VocabMaster.');
       }
     } catch (error: any) {
       const errorMessage = error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password' || error?.code === 'auth/user-not-found'
