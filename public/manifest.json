@@ -1,0 +1,41 @@
+{
+  "name": "VocabMaster - Language Learning Game",
+  "short_name": "VocabMaster",
+  "description": "Master vocabulary through interactive games and daily challenges",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#8B5CF6",
+  "theme_color": "#8B5CF6",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=vocabmaster&backgroundColor=8b5cf6",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=vocabmaster&backgroundColor=8b5cf6",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["education", "games", "productivity"],
+  "lang": "en",
+  "shortcuts": [
+    {
+      "name": "Start Quick Game",
+      "short_name": "Quick Game",
+      "description": "Start a quick vocabulary game",
+      "url": "/?shortcut=quick-game"
+    },
+    {
+      "name": "Daily Challenges",
+      "short_name": "Challenges",
+      "description": "View today's challenges",
+      "url": "/?shortcut=challenges"
+    }
+  ]
+}
