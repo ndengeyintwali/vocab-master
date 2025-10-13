@@ -8,18 +8,19 @@
   "theme_color": "#8B5CF6",
   "orientation": "portrait",
   "scope": "/",
+  "id": "/",
   "icons": [
     {
-      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=vocabmaster&backgroundColor=8b5cf6",
+      "src": "https://via.placeholder.com/192x192/8b5cf6/ffffff?text=VM",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=vocabmaster&backgroundColor=8b5cf6",
+      "src": "https://via.placeholder.com/512x512/8b5cf6/ffffff?text=VM",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "categories": ["education", "games", "productivity"],
