@@ -33,6 +33,13 @@ export function LoginPage({ onLogin, onSignup, onGuestAccess }: LoginPageProps &
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate name contains at least one letter
+    if (!isLogin && !/[a-zA-Z]/.test(name)) {
+      alert('Name must contain at least one letter');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
