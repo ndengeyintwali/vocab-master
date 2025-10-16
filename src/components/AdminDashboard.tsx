@@ -19,6 +19,7 @@ import {
   Calendar,
   Activity,
   TrendingUp,
+  LogOut,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -29,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { popularLanguagePairs } from '../data/languages';
 import { supabase } from '../lib/supabase';
 import { fetchWordWithTranslation } from '../lib/dictionaryAPI';
+import { useAuth } from './AuthContext';
 
 // Simplified vocabulary item interface
 interface VocabularyItem {
@@ -54,6 +56,7 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ onBack }: AdminDashboardProps) {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [vocabularyData, setVocabularyData] = useState<{ [key: string]: VocabularyItem[] }>({});
   const [userRegistrations, setUserRegistrations] = useState<UserRegistration[]>([]);
@@ -213,9 +216,20 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
             <Settings className="w-6 h-6 text-blue-400" />
             <h1 className="text-xl font-bold">VocabMaster Admin</h1>
           </div>
-          <Badge variant="outline" className="bg-green-900 text-green-400 border-green-500">
-            Admin Mode
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="bg-green-900 text-green-400 border-green-500">
+              Admin Mode
+            </Badge>
+            <Button
+              onClick={logout}
+              variant="outline"
+              size="sm"
+              className="text-red-400 border-red-600 hover:bg-red-900 hover:text-red-300"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </div>
 
